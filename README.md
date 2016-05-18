@@ -1,4 +1,11 @@
 # PieRGBColor
 
 Controller RGB With NETPIE
+ควบคุมเปลี่ยนสี RGB ผ่าน NETPIE แบบ Realtime
 
+# การใช้งาน
+
+  นำไฟล์ HTML ไปไว้ที่ host server ที่ต้องการ เข้าใช้งานโดยการนำ APPID, KEY และ SECRET ที่ได้จากการ Create Application ID (https://netpie.io/app) มาวางต่อหลัง # เพื่อ auth กับระบบ NETPIE
+
+  http://localhost/PieRGBColor/HTML5/index.html#APPID:KEY:SECRET
+  
