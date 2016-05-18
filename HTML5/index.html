@@ -1,0 +1,159 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+	<style>
+		body {
+		margin: 0px;
+		padding: 0px;
+		}
+
+		#canvasPicker{
+		background-color: #333333;
+		}
+		
+	</style>
+	<script src="https://netpie.io/microgear.js"></script>
+	</head>
+	<body>
+		<canvas id="canvasPicker" width="276" height="276"></canvas>
+		<div id="data" style="color: #FFF; position: absolute; top: 0; left: 0;">Offline</div>
+		<script>
+			var appid, appkey, appsecret;
+			var a = location.hash.substring(1).split(':');
+			if (a.length==3) {
+				appid = a[0];
+				appkey = a[1];
+				appsecret = a[2];
+			}
+			else {
+				alert("Please inclde APPID:APPKEY:APPSECRET as a url hash e.g. :\n\n index.html#APPID:APPKEY:APPSECRET");            
+			}
+			
+			const APPID =appid;
+			const KEY = appkey;
+			const SECRET = appsecret;
+			const ALIAS = "htmlstriprgb";
+
+			var microgear = Microgear.create({
+				key: KEY,
+				secret: SECRET,
+				alias : ALIAS
+			});
+
+			var offsets = 1;
+			var canvasSize = 276;
+			var color = "255,255,255";
+			var timestamp = new Date().getTime();
+			var status = 0;
+
+			microgear.on('message',function(topic,msg) {
+				document.getElementById("data").innerHTML = msg;
+			});
+
+			microgear.on('connected', function() {
+				microgear.setAlias(ALIAS);
+				status = 1;
+				document.getElementById("data").innerHTML = "Online";
+			});
+
+			microgear.on('disconnected', function() {
+				status = 0;
+				document.getElementById("data").innerHTML = "Offline";
+			});
+
+			microgear.resettoken(function(err) {
+				microgear.connect(APPID);
+			});
+
+			function sendColor(){
+				var t = new Date().getTime();
+				if(((t-timestamp)>100) && status==1){
+					console.log("Color : "+color+"  "+(t-timestamp));
+					timestamp = new Date().getTime();
+					microgear.publish('/striprgb/color',color);
+				}
+			}
+
+			var h = window.innerHeight;
+			var w = window.innerWidth;
+
+			if(h>w && w>=276){
+				canvasSize = w;
+			}else if(h<=w && h>=276){
+				canvasSize = h;
+			}
+
+			offsets = Math.floor(canvasSize/256);
+			canvasSize = ((256*offsets)+20);
+			document.getElementsByTagName('canvas')[0].style.width = canvasSize+"px";
+			document.getElementsByTagName('canvas')[0].style.height = canvasSize+"px";
+
+			var canvasMarginLeft = Math.floor((w/2)-(canvasSize/2));
+			if(canvasMarginLeft>0){
+				document.getElementsByTagName('canvas')[0].style.marginLeft = canvasMarginLeft+"px";
+				document.getElementById('data').style.left = canvasMarginLeft+"px";
+			}
+			var canvasMarginTop = Math.floor((h/2)-(canvasSize/2));
+			if(canvasMarginTop>0){
+				document.getElementsByTagName('canvas')[0].style.marginTop = canvasMarginTop+"px";
+				document.getElementById('data').style.top = canvasMarginTop+"px";
+			}
+
+			function getMousePos(canvas, evt) {
+				var rect = canvas.getBoundingClientRect();
+				return {
+					x: evt.clientX - rect.left,
+					y: evt.clientY - rect.top
+				};
+			}
+
+			function init(imageObj) {
+				var padding = 10;
+				var canvas = document.getElementById('canvasPicker');
+				var context = canvas.getContext('2d');
+				var mouseDown = false;
+
+				context.strokeStyle = '#444';
+				context.lineWidth = 2;
+
+				canvas.addEventListener('mousedown', function() {
+					mouseDown = true;
+				}, false);
+
+				canvas.addEventListener('mouseup', function() {
+					mouseDown = false;
+				}, false);
+
+				canvas.addEventListener('mousemove', function(evt) {
+					var mousePos = getMousePos(canvas, evt);
+
+					if(mouseDown && mousePos !== null && mousePos.x > (padding) && mousePos.x < (padding) + imageObj.width && mousePos.y > (padding) && mousePos.y < (padding) + imageObj.height) {
+						// color picker image is 256x256 and is offset by 10px
+						// from top and bottom
+						var imageData = context.getImageData(padding, padding, imageObj.width, imageObj.width);
+						var data = imageData.data;
+						var x = Math.floor((mousePos.x - padding)/offsets);
+						var y = Math.floor((mousePos.y - padding)/offsets);
+						var red = data[((imageObj.width * y) + x) * 4];
+						var green = data[((imageObj.width * y) + x) * 4 + 1];
+						var blue = data[((imageObj.width * y) + x) * 4 + 2];
+						color = red + ',' + green + ',' + blue;
+						document.body.style.backgroundColor = 'rgb('+color+')';
+						sendColor();
+					}else{
+						document.body.style.backgroundColor = 'rgb('+color+')';
+					}
+				}, false);
+
+				context.drawImage(imageObj, padding, padding);
+			}
+			var imageObj = new Image();
+			imageObj.onload = function() {
+				init(this);
+			};
+			imageObj.src = 'img/color-picker.jpg';
+			imageObj.width = canvasSize;
+			imageObj.height = canvasSize;
+		</script>
+	</body>
+</html>
