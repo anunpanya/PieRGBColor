@@ -3,18 +3,13 @@
   #include <avr/power.h>
 #endif
 
-#include <AuthClient.h>
-#include <MicroGear.h>
-#include <MQTTClient.h>
-#include <SHA1.h>
-#include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <EEPROM.h>
 #include <MicroGear.h>
+
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
+#include <EEPROM.h>
 #include <WiFiManager.h>
-#include <debug.h>
 #include <string.h>
 
 #define APPID   "APPID"
@@ -39,7 +34,7 @@ int r=0,g=0,b=0;
 
 MicroGear microgear(client);
 
-char* subStr (char* input_string, char *separator, int segment_number) {
+char* subStr (char* input_string, char *separator, int segment_number) { //ฟังก์ชั่น substring
   char *act, *sub, *ptr;
   static char copy[MAX_STRING_LEN];
   int i;
@@ -53,9 +48,9 @@ char* subStr (char* input_string, char *separator, int segment_number) {
   return sub;
 }
 
-void setColor(int r, int g , int b){
+void setColor(int r, int g , int b){ //ฟังก์ชั่นกำหนดสีให้กับ strip rgb
   for(int i=0;i<NUMPIXELS;i++){
-    pixels.setPixelColor(i, pixels.Color(r,g,b));
+    pixels.setPixelColor(i, pixels.Color(r,g,b)); //กำหนดสี
     pixels.show();
     delay(delayval); // Delay for a period of time (in milliseconds).
   }  
@@ -66,23 +61,24 @@ void onMsghandler(char *topic, uint8_t* msg, unsigned int msglen) {
   str[msglen] = '\0';
     
   for (int x = 1; x <= 3; x++) {
-    rgb[x-1]=(subStr(str, ",", x));
+    rgb[x-1]=(subStr(str, ",", x)); //ตัดข้อความที่รับเข้ามา
   }
   
-  r = atoi((char*)rgb[0]);
-  g = atoi((char*)rgb[1]);
-  b = atoi((char*)rgb[2]);
+  r = atoi((char*)rgb[0]); //กำหนดค่าสีแดง
+  g = atoi((char*)rgb[1]); //กำหนดค่าสีเขียว
+  b = atoi((char*)rgb[2]); //กำหนดค่าสีน้ำเงิน
+  //print ค่าที่รับเข้ามา
   Serial.print(r);
   Serial.print(" : ");
   Serial.print(g);
   Serial.print(" : ");
   Serial.println(b);
-  if((r>=0&&r<=256) && (g>=0&&g<=256) && (b>=0&&b<=256)) setColor(r,g,b);
+  if((r>=0&&r<=256) && (g>=0&&g<=256) && (b>=0&&b<=256)) setColor(r,g,b); //ตรวจสอบค่าสีที่ส่งเข้ามาตรงเงื่อนไขหรือไม่
 }
 
 void onConnected(char *attribute, uint8_t* msg, unsigned int msglen) {
   Serial.println("Connected to NETPIE...");
-  microgear.subscribe("/striprgb/color");
+  microgear.subscribe("/striprgb/color"); // subscribe topic ที่สนใจ
 }
 
 void setup() {
@@ -99,14 +95,14 @@ void setup() {
   pixels.show();
   
   WiFiManager wifiManager;
-  wifiManager.setTimeout(180);
+  wifiManager.setTimeout(180); //timeout wifi
 
-  //wifiManager.resetSettings();
+  //wifiManager.resetSettings(); //รีเซ็ต config wifi
 
-  if (!wifiManager.autoConnect("PieStripRGB")) {
+  if (!wifiManager.autoConnect("PieStripRGB")) { // Mode AP name : "PieStripRGB"
     Serial.println("Failed to connect and hit timeout");
     delay(3000);
-    ESP.reset();
+    ESP.reset(); // restart device
     delay(5000);
   }
   
@@ -124,6 +120,6 @@ void loop() {
   }
   else {
     Serial.println("connection lost, reconnect...");
-    microgear.connect(APPID);
+    microgear.connect(APPID); //reconnect netpie
   }
 }
